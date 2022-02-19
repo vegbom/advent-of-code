@@ -26,9 +26,15 @@ func min(a, b int) int {
 	return b
 }
 
+var verSum int = 0
+
 func main() {
 	// decode("D2FE28")
-	decode("38006F45291200")
+	// decode("38006F45291200")
+	// decode("EE00D40C823060")
+
+	decode(puzzleInput)
+	fmt.Printf("verSum=%d\n", verSum) //852
 }
 
 func mask(offset int) uint64 {
@@ -88,12 +94,13 @@ func ParsePack(bit int, data []byte) int {
 		switch state {
 		case ExpectPacketVersion:
 			packetVer := GetBits(bit, 3, data)
-			fmt.Printf("Packet Ver=%03d ", packetVer)
+			fmt.Printf("Packet Ver=%d ", packetVer)
+			verSum += int(packetVer)
 			bit += 3
 			state = ExpectPacketType
 		case ExpectPacketType:
 			packetType := GetBits(bit, 3, data)
-			fmt.Printf("Type=%03d ", packetType)
+			fmt.Printf("Type=%d ", packetType)
 			bit += 3
 			if packetType == 4 {
 				// Literal Value
