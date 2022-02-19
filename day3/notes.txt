@@ -1,0 +1,56 @@
+gamma is the most common bit of the number
+
+Puzzle input is different length per line than the sample, so
+we want a generic solution for each of the compare constants.
+
+Assume that the line length is not so long maybe?
+
+NOTE: the input is a string.
+
+
+
+IN          CONST   OP
+00100 AND 10000 ? bit[0]++ : bit[0]--
+00100 AND 01000 ? bit[1]++ : bit[1]--
+00100 AND 00100 ? bit[2]++ : bit[2]--
+00100 AND 00010 ? bit[3]++ : bit[3]--
+00100 AND 00001 ? bit[4]++ : bit[4]--
+
+
+
+    11110
+AND 00001
+=   00000 == 00001 ? NO
+
+
+    11110
+AND 00010
+=   00010 == 00010 ? YES
+
+
+10110
+
+
+
+epsilon = NOT(gamma) AND 0b11111
+
+answer = epsilon * gamma
+
+
+
+---- PART 2
+
+IN
+ 0 0 1 0
+ 1 1 1 1
+ 1 0 1 1
+ 1 0 1 1
+ 1 0 1 0
+ 0 1 1 1
+ 0 0 1 1
+ 1 1 1 0
+ 1 0 0 0
+ 1 1 0 0
+ 0 0 0 1
+ 0 1 0 1
+ 
