@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 )
 
 type ParseState int
@@ -16,25 +17,29 @@ const (
 	ExpectLiteralValue       ParseState = 5
 	ExpectSubpacksByBit      ParseState = 6
 	ExpectSubpacksByNumPacks ParseState = 7
-	ExpectEndOfPacket        ParseState = 99
+	ExpectEndOfPacket        ParseState = 8
 )
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
+type Op int
+
+const (
+	Sum         Op = 0
+	Product     Op = 1
+	Minimum     Op = 2
+	Maximum     Op = 3
+	Literal     Op = 4
+	GreaterThan Op = 5
+	LessThan    Op = 6
+	EqualTo     Op = 7
+	Undefined   Op = -1
+)
 
 var verSum int = 0
 
 func main() {
-	// decode("D2FE28")
-	// decode("38006F45291200")
-	// decode("EE00D40C823060")
-
-	decode(puzzleInput)
-	fmt.Printf("verSum=%d\n", verSum) //852
+	ans := decode(puzzleInput)
+	fmt.Printf("Part 1: Version Sum=%d\n", verSum) //852
+	fmt.Printf("Part 2: Answer=%d\n", ans)         //19348959966392
 }
 
 func mask(offset int) uint64 {
@@ -43,7 +48,7 @@ func mask(offset int) uint64 {
 
 func GetBits(loc int, sz int, data []byte) (result uint64) {
 	byteNumStart := loc / 8
-	byteNumEnd := (loc + sz) / 8
+	byteNumEnd := (loc + (sz - 1)) / 8
 	bitOffsetStart := 8 - loc%8
 
 	byteNum := byteNumStart
@@ -65,7 +70,7 @@ func GetBits(loc int, sz int, data []byte) (result uint64) {
 	return result
 }
 
-func decode(in string) {
+func decode(in string) (ans int) {
 	data, err := hex.DecodeString(in)
 	if err != nil {
 		panic(err)
@@ -78,19 +83,22 @@ func decode(in string) {
 	// fmt.Printf("BBBBB=%b\n", GetBits(6+5, 5))
 	// fmt.Printf("CCCCC=%b\n", GetBits(6+5+5, 5))
 
-	// actual decode part
-	ParsePack(0, data)
+	_, ans = ParsePack(0, data)
+	return ans
 }
 
-func ParsePack(bit int, data []byte) int {
-	fmt.Printf("BEGIN SUBPACK from bit %d\n", bit)
+func ParsePack(bit int, data []byte) (int, int) {
+	fmt.Printf("BEGIN PACK from bit %d\n", bit)
 	state := ExpectPacketVersion
 	subpackByBitLen := 0
 	subpackByBitStart := 0
 	subpackByNumLen := 0
 	subpackByNumCurrent := 0
+	operands := make([]int, 0)
+	var operation Op = Undefined
+	result := 0
 	var litValue uint64 = 0
-	for bit < len(data)*8 {
+	for {
 		switch state {
 		case ExpectPacketVersion:
 			packetVer := GetBits(bit, 3, data)
@@ -102,7 +110,8 @@ func ParsePack(bit int, data []byte) int {
 			packetType := GetBits(bit, 3, data)
 			fmt.Printf("Type=%d ", packetType)
 			bit += 3
-			if packetType == 4 {
+			operation = Op(packetType)
+			if operation == Literal {
 				// Literal Value
 				litValue = 0
 				state = ExpectLiteralValue
@@ -116,6 +125,7 @@ func ParsePack(bit int, data []byte) int {
 			bit += 5
 			if v>>4 == 0 {
 				fmt.Printf("Literal Value=%d\n", litValue)
+				operands = []int{int(litValue)}
 				state = ExpectEndOfPacket
 			} else {
 				litValue = litValue << 4
@@ -141,34 +151,76 @@ func ParsePack(bit int, data []byte) int {
 			subpackByNumCurrent = 0
 			state = ExpectSubpacksByNumPacks
 		case ExpectSubpacksByBit:
-			bit = ParsePack(bit, data)
+			bit, result = ParsePack(bit, data)
+			operands = append(operands, result)
 			if bit-subpackByBitStart >= subpackByBitLen {
 				state = ExpectEndOfPacket
 			}
 		case ExpectSubpacksByNumPacks:
-			bit = ParsePack(bit, data)
+			bit, result = ParsePack(bit, data)
+			operands = append(operands, result)
 			subpackByNumCurrent++
 			if subpackByNumCurrent >= subpackByNumLen {
 				state = ExpectEndOfPacket
 			}
 		case ExpectEndOfPacket:
-			fmt.Printf("END SUBPACK at bit %d\n", bit)
-			return bit
+			fmt.Printf("END PACK at bit %d, result %d \n", bit, Calculate(operation, operands))
+			return bit, Calculate(operation, operands)
 		}
 	}
-	return bit
 }
 
-func SelectPacketType(t int) ParseState {
-	switch t {
-	case 4:
-		// Literal Value
-		return ExpectLiteralValue
-	case 6:
-		return ExpectLenType
-	case 3:
-		return ExpectLenType
+func Calculate(operation Op, operands []int) int {
+	switch operation {
+	case Sum:
+		s := 0
+		for _, v := range operands {
+			s += v
+		}
+		return s
+	case Product:
+		s := 0
+		for i, v := range operands {
+			if i == 0 {
+				s = v
+			} else {
+				s *= v
+			}
+		}
+		return s
+	case Minimum:
+		s := math.MaxInt
+		for _, v := range operands {
+			if v < s {
+				s = v
+			}
+		}
+		return s
+	case Maximum:
+		s := 0
+		for _, v := range operands {
+			if v > s {
+				s = v
+			}
+		}
+		return s
+	case GreaterThan:
+		if operands[0] > operands[1] {
+			return 1
+		}
+		return 0
+	case LessThan:
+		if operands[0] < operands[1] {
+			return 1
+		}
+		return 0
+	case EqualTo:
+		if operands[0] == operands[1] {
+			return 1
+		}
+		return 0
+	default:
+		// incl Literal Value
+		return operands[0]
 	}
-	return ExpectLiteralValue
-	//TODO
 }
