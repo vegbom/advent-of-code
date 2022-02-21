@@ -22,29 +22,32 @@ func main() {
 
 	// Example input:
 	//target area: x=20..30, y=-10..-5
-	areaYMin := -10
-	areaYMax := -5
-	areaXMin := 20
-	areaXMax := 30
+	// areaYMin := -10
+	// areaYMax := -5
+	// areaXMin := 20
+	// areaXMax := 30
 
 	// Actual Puzzle Input:
 	// target area: x=138..184, y=-125..-71
-	// areaYMin := -125
-	// areaYMax := -71
-	// areaXMin := 138
-	// areaXMax := 184
+	areaYMin := -125
+	areaYMax := -71
+	areaXMin := 138
+	areaXMax := 184
 
 	winner := 0
 	validV0s := make([]Coordinate, 0)
 
-	for yV0 := 0; yV0 < 200; yV0++ {
+	tryInitX := -3500
+	tryInitY := -3500
+
+	for yV0 := tryInitY; yV0 < 8000; yV0++ {
 		didHitY, stepMin, stepMax, yMax := simulateY(yV0, areaYMin, areaYMax)
-		fmt.Printf("Simulate: y_V0 = %d , Steps: %d-%d, Outcome %v , max Y height: %d\n", yV0, stepMin, stepMax, didHitY, yMax)
+		// fmt.Printf("Simulate: y_V0 = %d , Steps: %d-%d, Outcome %v , max Y height: %d\n", yV0, stepMin, stepMax, didHitY, yMax)
 		if didHitY && yMax > winner {
 			winner = yMax
 		}
 		if didHitY {
-			for xV0 := -50; xV0 < 50; xV0++ {
+			for xV0 := tryInitX; xV0 < 4500; xV0++ {
 				if simulateX(xV0, areaXMin, areaXMax, stepMin, stepMax) {
 					validV0s = append(validV0s, Coordinate{xV0, yV0})
 					fmt.Printf("Found Valid V0: %d,%d\n", xV0, yV0)
@@ -120,13 +123,13 @@ func simulateX(xV int, tgtMin int, tgtMax int, stepMin int, stepMax int) bool {
 
 	x := 0
 	step := 0
-	for step <= stepMax {
+	for step < stepMax {
 		step++
 		x += xV
 		xV = xVnext(xV)
-		// if step >= stepMin && inRange(x) == InArea {
-		// 	return true
-		// }
+		if step >= stepMin && inRange(x) == InArea {
+			return true
+		}
 	}
 
 	return inRange(x) == InArea
