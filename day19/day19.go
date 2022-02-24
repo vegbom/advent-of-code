@@ -50,16 +50,16 @@ func main() {
 			}
 
 			// Rotate through all the options
-			for rotation := -3; rotation <= 3; rotation++ {
+			for rotation := 0; rotation <= 3; rotation++ {
 				// Generate relative coordinates
-				s2.beaconsRel = getRelativeCoords2D(rotate2D(s2.beaconsAbs, rotation))
+				noflip, flipped = getRelativeCoords2D(rotate2D(s2.beaconsAbs, rotation))
 
 				// Count how many same for each of the beacons and if it exceeds threashold
 				// If it does, then record the beacon ID?
 				THREASHOLD := 2
 				overlap := getOverlapBeaconIds(s1.beaconsRel, s2.beaconsRel, THREASHOLD)
 				if len(overlap) > THREASHOLD {
-					fmt.Printf("Beacon %d and %d in rotation %d has %d matching\n", i, j, rotation, len(overlap))
+					fmt.Printf("Beacon %d and %d in rotation %d has matching: %v\n", i, j, rotation, trimBeaconListForPrinting(s1.beaconsAbs, overlap))
 					// found the matching orientation
 					overlapBeacons[ScannerPair{i, j}] = overlap
 					break
@@ -107,6 +107,14 @@ func getNumOverlapLinks(beacon1 []Coord2D, beacon2 []Coord2D) (count int) {
 	return count
 }
 
+func trimBeaconListForPrinting(beaconsAbs []Coord2D, beaconIds []int) []Coord2D {
+	result := make([]Coord2D, 0)
+	for _, id := range beaconIds {
+		result = append(result, beaconsAbs[id])
+	}
+	return result
+}
+
 func getRelativeCoords2D(beaconsAbs []Coord2D) [][]Coord2D {
 	relCoords := make([][]Coord2D, 0)
 	for _, b1 := range beaconsAbs {
@@ -131,46 +139,6 @@ func getRelativeCoords(beacons []Coord3D) [][]Coord3D {
 	}
 
 	return relCoords
-}
-
-func rotate2D(beacons []Coord2D, orientation int) []Coord2D {
-	// Define orientation as follows:
-	// 0 = 0deg, 1 = 90deg CW, 2 = 180deg CW, 3 = 270deg CW
-	// If negative, means it is flipped
-
-	flip := false
-	if orientation < 0 {
-		flip = true
-		orientation *= -1
-	}
-
-	// Rotation Matrix
-	r := [2][2]int{
-		{1, 0},
-		{0, 1},
-	}
-	switch orientation {
-	case 1:
-		r = [2][2]int{{0, -1}, {1, 0}}
-	case 2:
-		r = [2][2]int{{-1, 0}, {0, -1}}
-	case 3:
-		r = [2][2]int{{0, 1}, {-1, 0}}
-	}
-
-	// Multiply matrix
-	newCoords := make([]Coord2D, 0)
-	for _, v := range beacons {
-		xNew := r[0][0]*v.x + r[0][1]*v.y
-		yNew := r[1][0]*v.x + r[1][1]*v.y
-		if flip {
-			xNew *= -1
-			yNew *= -1
-		}
-		newCoords = append(newCoords, Coord2D{xNew, yNew})
-	}
-
-	return newCoords
 }
 
 func Loader(filename string) []Scanner2D {
