@@ -32,41 +32,59 @@ type Scanner2D struct {
 	beaconsRel [][]Coord2D
 }
 
+type Scanner3D struct {
+	id         int
+	beaconsAbs []Coord3D
+	beaconsRel [][]Coord3D
+}
+
 func main() {
-	list := Loader("2dtest.txt")
-	fmt.Printf("%v\n", list)
+	list := Loader("3dtest1.txt")
+	fmt.Printf("INPUT:\n%v\n", list)
 
-	overlapBeacons := make(map[ScannerPair][]int, 0)
-	for i := 0; i < (len(list) - 1); i++ {
-		s1 := list[i]
-
+	for i, orientation := range allOrientations3D() {
 		// Generate relative coordinates
-		s1.beaconsRel = getRelativeCoords2D(s1.beaconsAbs)
-
-		for j := i + 1; j < len(list); j++ {
-			s2 := list[j]
-			if i == j {
-				continue
-			}
-
-			// Rotate through all the options
-			for _, orientation := range allOrientations2D() {
-				// Generate relative coordinates
-				s2.beaconsRel = getRelativeCoords2D(rotate2D(s2.beaconsAbs, orientation))
-				// Count how many same for each of the beacons and if it exceeds threshold
-				// If it does, then record the beacon ID?
-				THRESHOLD := 3
-				overlap := getOverlapBeaconIds(s1.beaconsRel, s2.beaconsRel, THRESHOLD)
-				if len(overlap) >= THRESHOLD {
-					fmt.Printf("Beacon %d and %d in orientation %v has %d matching\n", i, j, orientation, len(overlap))
-					// found the matching orientation
-					overlapBeacons[ScannerPair{i, j}] = overlap
-					// break
-					// break out TODO CHECK IF THIS IS TRUE? It might not be?
-				}
-			}
+		a := rotate3D(list[0].beaconsAbs, orientation)
+		fmt.Printf("Orientation %d - %v:\n", i, orientation)
+		for _, v := range a {
+			fmt.Printf("%d,%d,%d\n", v.x, v.y, v.z)
 		}
+		fmt.Printf("\n")
 	}
+
+	return
+
+	// overlapBeacons := make(map[ScannerPair][]int, 0)
+	// for i := 0; i < (len(list) - 1); i++ {
+	// 	s1 := list[i]
+
+	// 	// Generate relative coordinates
+	// 	s1.beaconsRel = getRelativeCoords2D(s1.beaconsAbs)
+
+	// 	for j := i + 1; j < len(list); j++ {
+	// 		s2 := list[j]
+	// 		if i == j {
+	// 			continue
+	// 		}
+
+	// 		// Rotate through all the options
+	// 		for _, orientation := range allOrientations2D() {
+	// 			// Generate relative coordinates
+	// 			s2.beaconsRel = getRelativeCoords2D(rotate2D(s2.beaconsAbs, orientation))
+	// 			// Count how many same for each of the beacons and if it exceeds threshold
+	// 			// If it does, then record the beacon ID?
+	// 			THRESHOLD := 3
+	// 			overlap := getOverlapBeaconIds(s1.beaconsRel, s2.beaconsRel, THRESHOLD)
+	// 			if len(overlap) >= THRESHOLD {
+	// 				fmt.Printf("Beacon %d and %d in orientation %v has %d matching\n", i, j, orientation, len(overlap))
+	// 				// found the matching orientation
+	// 				overlapBeacons[ScannerPair{i, j}] = overlap
+	// 				// break
+	// 				// break out TODO CHECK IF THIS IS TRUE? It might not be?
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	// try to match
 	// n := rotate2D(list[0], 0, false)
@@ -146,7 +164,7 @@ func getRelativeCoords(beacons []Coord3D) [][]Coord3D {
 	return relCoords
 }
 
-func Loader(filename string) []Scanner2D {
+func Loader(filename string) []Scanner3D {
 	f, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -155,8 +173,8 @@ func Loader(filename string) []Scanner2D {
 
 	goScanner := bufio.NewScanner(f)
 
-	result := make([]Scanner2D, 0)
-	var currentScanner Scanner2D
+	result := make([]Scanner3D, 0)
+	var currentScanner Scanner3D
 
 	scanHeader := true
 	headerExp := regexp.MustCompile(`scanner (?P<id>\d+)`)
@@ -174,11 +192,11 @@ func Loader(filename string) []Scanner2D {
 			fmt.Printf("INSTR: %v\n", goScanner.Text())
 			matches := headerExp.FindStringSubmatch(goScanner.Text())
 			currentScanner.id = MustStringToInt(matches[headerExp.SubexpIndex("id")])
-			currentScanner.beaconsAbs = make([]Coord2D, 0)
+			currentScanner.beaconsAbs = make([]Coord3D, 0)
 			scanHeader = false
 		} else {
 			coordsString := strings.Split(goScanner.Text(), ",")
-			currentScanner.beaconsAbs = append(currentScanner.beaconsAbs, Coord2D{MustStringToInt(coordsString[0]), MustStringToInt(coordsString[1])})
+			currentScanner.beaconsAbs = append(currentScanner.beaconsAbs, Coord3D{MustStringToInt(coordsString[0]), MustStringToInt(coordsString[1]), MustStringToInt(coordsString[2])})
 		}
 	}
 	result = append(result, currentScanner)

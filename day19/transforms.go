@@ -3,24 +3,28 @@ package main
 import "math"
 
 type Orientation struct {
+	axis     int
 	rotation int
 	flip     bool
 }
 
-func allOrientations2D() (orientations []Orientation) {
-	orientations = make([]Orientation, 0)
-	for rotation := 0; rotation <= 3; rotation++ {
-		orientations = append(orientations, Orientation{rotation, true})
-		orientations = append(orientations, Orientation{rotation, false})
-	}
-	return orientations
-}
+// func allOrientations2D() (orientations []Orientation) {
+// 	orientations = make([]Orientation, 0)
+// 	for rotation := 0; rotation <= 3; rotation++ {
+// 		orientations = append(orientations, Orientation{rotation, false})
+// 		orientations = append(orientations, Orientation{rotation, true})
+// 	}
+// 	return orientations
+// }
 
 func allOrientations3D() (orientations []Orientation) {
 	orientations = make([]Orientation, 0)
-	for rotation := 0; rotation < 12; rotation++ {
-		orientations = append(orientations, Orientation{rotation, true})
-		orientations = append(orientations, Orientation{rotation, false})
+	for axis := 0; axis < 3; axis++ {
+		for rotation := 0; rotation < 4; rotation++ {
+			orientations = append(orientations, Orientation{axis, rotation, false})
+			orientations = append(orientations, Orientation{axis, rotation, true})
+			// orientations = append(orientations, Orientation{rotation, true})
+		}
 	}
 	return orientations
 }
@@ -35,15 +39,8 @@ func rotate3D(beacons []Coord3D, orientation Orientation) (final []Coord3D) {
 	// Cannot use integer to represent flip as in the case with 2D, because
 	// you can still flip while having no rotation
 
-	// Rotation Matrix
-	r := [3][3]int{
-		{1, 0, 0},
-		{0, 1, 0},
-		{0, 0, 1},
-	}
-
 	a := 0.0 // angle
-	switch orientation.rotation % 4 {
+	switch orientation.rotation {
 	case 1:
 		a = math.Pi / 2
 	case 2:
@@ -52,26 +49,32 @@ func rotate3D(beacons []Coord3D, orientation Orientation) (final []Coord3D) {
 		a = math.Pi * 3 / 2
 	}
 
-	switch orientation.rotation / 3 {
-	case 1:
+	// Rotation Matrix
+	r := [3][3]float64{
+		{1, 0, 0},
+		{0, 1, 0},
+		{0, 0, 1},
+	}
+	switch orientation.axis {
+	case 0:
 		// X
-		r = [3][3]int{
+		r = [3][3]float64{
 			{1, 0, 0},
-			{0, int(math.Cos(a)), -int(math.Sin(a))},
-			{0, int(math.Sin(a)), int(math.Cos(a))},
+			{0, math.Cos(a), -math.Sin(a)},
+			{0, math.Sin(a), math.Cos(a)},
+		}
+	case 1:
+		// Y
+		r = [3][3]float64{
+			{math.Cos(a), 0, math.Sin(a)},
+			{0, 1, 0},
+			{-math.Sin(a), 0, math.Cos(a)},
 		}
 	case 2:
-		// Y
-		r = [3][3]int{
-			{int(math.Cos(a)), 0, int(math.Sin(a))},
-			{0, 1, 0},
-			{-int(math.Sin(a)), 0, int(math.Cos(a))},
-		}
-	case 3:
 		// Z
-		r = [3][3]int{
-			{int(math.Cos(a)), -int(math.Sin(a)), 0},
-			{int(math.Sin(a)), int(math.Cos(a)), 0},
+		r = [3][3]float64{
+			{math.Cos(a), -math.Sin(a), 0},
+			{math.Sin(a), math.Cos(a), 0},
 			{0, 0, 1},
 		}
 	}
@@ -79,15 +82,23 @@ func rotate3D(beacons []Coord3D, orientation Orientation) (final []Coord3D) {
 	// Multiply matrix
 	final = make([]Coord3D, 0)
 	for _, v := range beacons {
-		xNew := r[0][0]*v.x + r[0][1]*v.y + r[0][2]*v.z
-		yNew := r[1][0]*v.x + r[1][1]*v.y + r[1][2]*v.z
-		zNew := r[2][0]*v.x + r[2][1]*v.y + r[2][2]*v.z
 		if orientation.flip {
-			xNew *= -1
-			yNew *= -1
-			zNew *= -1
+			switch orientation.axis {
+			case 0:
+				v.x *= -1
+			case 1:
+				v.y *= -1
+			case 2:
+				v.z *= -1
+			}
 		}
-		final = append(final, Coord3D{xNew, yNew, zNew})
+		// WARNING: If you instead write
+		// xNew := r[0][0]*float64(v.x) + r[0][1]*float64(v.y) + r[0][2]*float64(v.z)
+		// that will cause incorrect result due to floating point errors and rounding!
+		xNew := int(r[0][0])*v.x + int(r[0][1])*v.y + int(r[0][2])*v.z
+		yNew := int(r[1][0])*v.x + int(r[1][1])*v.y + int(r[1][2])*v.z
+		zNew := int(r[2][0])*v.x + int(r[2][1])*v.y + int(r[2][2])*v.z
+		final = append(final, Coord3D{int(xNew), int(yNew), int(zNew)})
 	}
 	return final
 }
