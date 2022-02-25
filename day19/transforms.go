@@ -1,6 +1,9 @@
 package main
 
-import "math"
+import (
+	"log"
+	"math"
+)
 
 type Orientation struct {
 	axis     int
@@ -46,7 +49,7 @@ func rotate3D(beacons []Coord3D, orientation Orientation) (final []Coord3D) {
 	case 2:
 		a = math.Pi
 	case 3:
-		a = math.Pi * 3 / 2
+		a = (math.Pi * 3) / 2
 	}
 
 	// Rotation Matrix
@@ -77,6 +80,8 @@ func rotate3D(beacons []Coord3D, orientation Orientation) (final []Coord3D) {
 			{math.Sin(a), math.Cos(a), 0},
 			{0, 0, 1},
 		}
+	default:
+		log.Fatal("Wrong axis")
 	}
 
 	// Multiply matrix
