@@ -50,19 +50,18 @@ func main() {
 			}
 
 			// Rotate through all the options
-			for rotation := 0; rotation <= 3; rotation++ {
+			for _, orientation := range allOrientations2D() {
 				// Generate relative coordinates
-				noflip, flipped = getRelativeCoords2D(rotate2D(s2.beaconsAbs, rotation))
-
-				// Count how many same for each of the beacons and if it exceeds threashold
+				s2.beaconsRel = getRelativeCoords2D(rotate2D(s2.beaconsAbs, orientation))
+				// Count how many same for each of the beacons and if it exceeds threshold
 				// If it does, then record the beacon ID?
-				THREASHOLD := 2
-				overlap := getOverlapBeaconIds(s1.beaconsRel, s2.beaconsRel, THREASHOLD)
-				if len(overlap) > THREASHOLD {
-					fmt.Printf("Beacon %d and %d in rotation %d has matching: %v\n", i, j, rotation, trimBeaconListForPrinting(s1.beaconsAbs, overlap))
+				THRESHOLD := 3
+				overlap := getOverlapBeaconIds(s1.beaconsRel, s2.beaconsRel, THRESHOLD)
+				if len(overlap) >= THRESHOLD {
+					fmt.Printf("Beacon %d and %d in orientation %v has %d matching\n", i, j, orientation, len(overlap))
 					// found the matching orientation
 					overlapBeacons[ScannerPair{i, j}] = overlap
-					break
+					// break
 					// break out TODO CHECK IF THIS IS TRUE? It might not be?
 				}
 			}
@@ -84,11 +83,11 @@ func main() {
 
 }
 
-func getOverlapBeaconIds(list1 [][]Coord2D, list2 [][]Coord2D, threashold int) (beaconIds []int) {
+func getOverlapBeaconIds(list1 [][]Coord2D, list2 [][]Coord2D, threshold int) (beaconIds []int) {
 	beaconIds = make([]int, 0)
 	for i, v1 := range list1 {
 		for _, v2 := range list2 {
-			if getNumOverlapLinks(v1, v2) >= threashold {
+			if getNumOverlapLinks(v1, v2) >= (threshold - 1) {
 				beaconIds = append(beaconIds, i)
 			}
 		}
@@ -120,6 +119,9 @@ func getRelativeCoords2D(beaconsAbs []Coord2D) [][]Coord2D {
 	for _, b1 := range beaconsAbs {
 		currentBeacon := make([]Coord2D, 0)
 		for _, b2 := range beaconsAbs {
+			if b1 == b2 {
+				continue
+			}
 			currentBeacon = append(currentBeacon, Coord2D{b2.x - b1.x, b2.y - b1.y})
 		}
 		relCoords = append(relCoords, currentBeacon)
@@ -133,6 +135,9 @@ func getRelativeCoords(beacons []Coord3D) [][]Coord3D {
 	for _, b1 := range beacons {
 		currentBeacon := make([]Coord3D, 0)
 		for _, b2 := range beacons {
+			if b1 == b2 {
+				continue
+			}
 			currentBeacon = append(currentBeacon, Coord3D{b2.x - b1.x, b2.y - b1.y, b2.z - b1.z})
 		}
 		relCoords = append(relCoords, currentBeacon)
